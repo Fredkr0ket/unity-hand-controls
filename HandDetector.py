@@ -1,3 +1,4 @@
+from typing import Literal
 import cv2
 from cvzone.HandTrackingModule import HandDetector
 
@@ -5,17 +6,39 @@ from cvzone.HandTrackingModule import HandDetector
 # TODO: add comments for confData dataTypes
 
 class handTracker:
-    def __init__ (self, maxHands: int = 2, detectionConfidence: float = 0.8, minTrackingConfidence: float = 0.5 , resolution: tuple[int, int] = (1280, 720), showVideo: bool = False):
+    def __init__ (
+            self,
+            maxHands: int = 2,
+            detectionConfidence: float = 0.8,
+            minTrackingConfidence: float = 0.5 ,
+            resolution: tuple[int, int] = (1280, 720),
+            showVideo: bool = True,
+            dataType: Literal['bbox', 'lmList', 'center'] | list[str] | None = ['bbox', 'center', 'lmList'],
+            getHands: Literal['right', 'left', 'both'] = 'left'):
         self.maxHands = maxHands
         self.detectionConfidence = detectionConfidence
         self.minTrackingConfidence = minTrackingConfidence
         self.resolution = resolution
         self.showVideo = showVideo
+        self.dataType = dataType
+        self.getHands = getHands
 
-    def __confData(rightHand, leftHand, dataType: str | list[str]):
-        # configures the data to the actualy data you wane recieve
-        pass
-        
+    def __confData(self, rightHand, leftHand):
+        if type(self.dataType) == str:
+            output = {'righthand': rightHand[self.dataType], 'lefthand': leftHand[self.dataType]}
+        elif type(self.dataType) == list:
+            output = {'righthand': {}, 'lefthand': {}}
+            for dataType in self.dataType:
+                output["righthand"][dataType] = rightHand[dataType]
+                output["lefthand"][dataType] = leftHand[dataType]
+        match self.getHands:
+            case 'right':
+                return output['righthand']
+            case 'left':
+                return output['lefthand']
+            case _:
+                return output
+
 
     def handtracker(self):
         detector = HandDetector(maxHands=self.maxHands, detectionCon=self.detectionConfidence, minTrackCon=self.minTrackingConfidence)
@@ -45,8 +68,7 @@ class handTracker:
 
                 if len(rightHand) != 0 and len(leftHand) != 0:
 
-                    print(rightHand['bbox'])
-                    print(leftHand['bbox'])
+                    print(self.__confData(rightHand, leftHand))
 
             if self.showVideo != True:
                 continue
