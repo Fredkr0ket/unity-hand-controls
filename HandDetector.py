@@ -1,9 +1,13 @@
 from typing import Literal
 import cv2
 from cvzone.HandTrackingModule import HandDetector
+import socket
+
+udpIp = "127.0.0.1"
+udpPort = 5005
+udpMessage = "kaas"
 
 
-# TODO: add comments for confData dataTypes
 
 class handTracker:
     def __init__ (
@@ -14,7 +18,8 @@ class handTracker:
             resolution: tuple[int, int] = (1280, 720),
             showVideo: bool = True,
             dataType: Literal['bbox', 'lmList', 'center'] | list[str] | None = ['bbox', 'center', 'lmList'],
-            getHands: Literal['right', 'left', 'both'] = 'left'):
+            getHands: Literal['right', 'left', 'both'] = 'left',
+            udp: dict[str, int] = {'ip': '127.0.0.1', 'port': 5005}):
         self.maxHands = maxHands
         self.detectionConfidence = detectionConfidence
         self.minTrackingConfidence = minTrackingConfidence
@@ -22,6 +27,9 @@ class handTracker:
         self.showVideo = showVideo
         self.dataType = dataType
         self.getHands = getHands
+        self.udp = udp
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
 
     def __confData(self, rightHand, leftHand):
         if type(self.dataType) == str:
@@ -68,8 +76,8 @@ class handTracker:
 
                 if len(rightHand) != 0 and len(leftHand) != 0:
 
-                    print(self.__confData(rightHand, leftHand))
-
+                    data = self.__confData(rightHand, leftHand)
+                    self.sock.sendto(str(data).encode(), (self.udp['ip'], self.udp['port']))
             if self.showVideo != True:
                 continue
 
@@ -81,5 +89,8 @@ class handTracker:
 
 
 if __name__ == "__main__":
+    print("UDP target IP: %s" % udpIp)
+    print("UDP target port: %s" % udpPort)
+    print("message: %s" % udpMessage)
     handTrack = handTracker()
     handTrack.handtracker()
