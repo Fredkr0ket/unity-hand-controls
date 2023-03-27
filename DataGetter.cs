@@ -3,32 +3,61 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-class Program {
-    static void Main() {
-        // create a TCP/IP socket
-        Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+class Program
+{
+    static void Main(string[] args)
+    {
+        try
+        {
+            // Create a new TCP/IP socket.
+            Socket listener = new Socket(AddressFamily.InterNetwork,
+                SocketType.Stream, ProtocolType.Tcp);
 
-        // bind the socket to the local endpoint
-        IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
-        IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 5005);
-        listener.Bind(localEndPoint);
+            // Bind the socket to the local endpoint and listen for incoming connections.
+            IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
+            IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 5005);
+            listener.Bind(localEndPoint);
+            listener.Listen(10);
 
-        // start listening for incoming connections
-        listener.Listen(1);
+            Console.WriteLine("Waiting for a connection on port 5005...");
 
-        Console.WriteLine("Waiting for a connection...");
+            while (true)
+            {
+                // Wait for a connection and accept it.
+                Socket handler = listener.Accept();
 
-        // accept a connection and receive data
-        Socket handler = listener.Accept();
-        byte[] buffer = new byte[1024];
-        int bytesReceived = handler.Receive(buffer);
-        string data = Encoding.ASCII.GetString(buffer, 0, bytesReceived);
+                // Receive the data from the client.
+                byte[] buffer = new byte[1024];
+                string data = null;
+                while (true)
+                {
+                    int bytesReceived = handler.Receive(buffer);
+                    data += Encoding.ASCII.GetString(buffer, 0, bytesReceived);
+                    if (data.IndexOf("<EOF>") > -1)
+                    {
+                        break;
+                    }
+                }
 
-        // print the received data to the console
-        Console.WriteLine("Received: " + data);
+                // Show the data on the console.
+                Console.WriteLine("Received: {0}", data);
 
-        // clean up
-        handler.Shutdown(SocketShutdown.Both);
-        handler.Close();
+                // Echo the data back to the client.
+                byte[] message = Encoding.ASCII.GetBytes(data);
+                handler.Send(message);
+
+                // Release the socket.
+                handler.Shutdown(SocketShutdown.Both);
+                handler.Close();
+            }
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.ToString());
+        }
+
+        Console.WriteLine("\nPress any key to continue...");
+        Console.ReadKey();
     }
 }
